@@ -64,7 +64,16 @@ class VLMWorker:
                 # Prepare inputs
                 prompt = self._processor.apply_chat_template(messages, add_generation_prompt=True)
                 inputs = self._processor(text=prompt, images=[image], return_tensors="pt")
-                inputs = {k: v.to(self._device) for k, v in inputs.items()}
+                
+                # Move to device and cast to model dtype
+                model_dtype = self._model.dtype
+                new_inputs = {}
+                for k, v in inputs.items():
+                    v = v.to(self._device)
+                    if torch.is_floating_point(v):
+                        v = v.to(model_dtype)
+                    new_inputs[k] = v
+                inputs = new_inputs
 
                 # Generate
                 generated_ids = self._model.generate(**inputs, max_new_tokens=500)

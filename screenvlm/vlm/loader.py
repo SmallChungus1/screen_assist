@@ -23,7 +23,7 @@ def load_model_and_processor():
     else:
         device = device_pref
         
-    print(f"Loading model on {device}...")
+    print(f"Loading model {base_model_id} on {device}...")
     
     # Load processor
     processor = AutoProcessor.from_pretrained(base_model_id)
@@ -33,11 +33,24 @@ def load_model_and_processor():
     # Here we keep it simple with float16 if cuda/mps, else float32
     torch_dtype = torch.float16 if device in ["cuda", "mps"] else torch.float32
     
-    model = AutoModelForVision2Seq.from_pretrained(
-        base_model_id,
-        torch_dtype=torch_dtype,
-        device_map=device if device == "cuda" else None # device_map="auto" or specific device for CUDA
-    )
+    try:
+        model = AutoModelForVision2Seq.from_pretrained(
+            base_model_id,
+            torch_dtype=torch_dtype,
+            device_map=device if device == "cuda" else None # device_map="auto" or specific device for CUDA
+        )
+    except Exception as e:
+        print(f"AutoModelForVision2Seq failed ({e}), trying specific classes...")
+        try:
+            from transformers import SmolVLMForConditionalGeneration
+            model = SmolVLMForConditionalGeneration.from_pretrained(
+                base_model_id,
+                torch_dtype=torch_dtype,
+                device_map=device if device == "cuda" else None
+            )
+            print("Loaded using SmolVLMForConditionalGeneration.")
+        except ImportError:
+            raise e
     
     if device != "cuda":
         model.to(device)
@@ -69,11 +82,23 @@ def merge_adapter(out_dir: str, dtype: str = "fp16"):
         torch_dtype = torch.float16 if dtype == "fp16" else (torch.bfloat16 if dtype == "bf16" else torch.float32)
         
         print("Loading base model...")
-        model = AutoModelForVision2Seq.from_pretrained(
-            base_model_id,
-            torch_dtype=torch_dtype,
-            device_map="cpu" 
-        )
+        try:
+            model = AutoModelForVision2Seq.from_pretrained(
+                base_model_id,
+                torch_dtype=torch_dtype,
+                device_map="cpu" 
+            )
+        except Exception as e:
+            print(f"AutoModelForVision2Seq failed ({e}), trying specific classes...")
+            try:
+                from transformers import SmolVLMForConditionalGeneration
+                model = SmolVLMForConditionalGeneration.from_pretrained(
+                    base_model_id,
+                    torch_dtype=torch_dtype,
+                    device_map="cpu"
+                )
+            except ImportError:
+                raise e
         
         print("Loading adapter...")
         model = PeftModel.from_pretrained(model, adapter_dir)

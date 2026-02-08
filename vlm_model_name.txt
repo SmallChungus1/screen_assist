@@ -1,1 +1,1 @@
-HuggingFaceTB/SmolVLM-Instruct
+HuggingFaceTB/SmolVLM2-500M-Video-Instruct

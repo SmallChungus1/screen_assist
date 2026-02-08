@@ -1,5 +1,6 @@
 torch
-transformers==4.46.3
+git+https://github.com/huggingface/transformers@v4.49.0-SmolVLM-2
+num2words
 peft
 accelerate
 bitsandbytes
