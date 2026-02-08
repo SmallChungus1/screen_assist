@@ -1,0 +1,6 @@
+@echo off
+echo Uninstalling existing PyTorch installation...
+pip uninstall -y torch torchvision
+echo Installing PyTorch with CUDA 12.6 support...
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+pause

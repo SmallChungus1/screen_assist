@@ -1,0 +1,3 @@
+**/venv/
+**/vlm_qlora/
+**/__pycache__/

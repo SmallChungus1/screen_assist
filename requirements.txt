@@ -1,0 +1,13 @@
+torch
+transformers==4.46.3
+peft
+accelerate
+bitsandbytes
+mss
+Pillow
+pyyaml
+langchain
+langchain-community
+chromadb
+sentence-transformers
+PySide6
