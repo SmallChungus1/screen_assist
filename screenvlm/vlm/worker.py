@@ -77,6 +77,12 @@ class VLMWorker:
 
                 # Generate
                 generated_ids = self._model.generate(**inputs, max_new_tokens=500)
+                
+                # Trim input tokens to avoid repetition
+                if "input_ids" in inputs:
+                    input_len = inputs["input_ids"].shape[1]
+                    generated_ids = generated_ids[:, input_len:]
+
                 generated_texts = self._processor.batch_decode(
                     generated_ids, 
                     skip_special_tokens=True

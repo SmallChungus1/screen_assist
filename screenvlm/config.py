@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 DEFAULT_CONFIG_DIR = Path.home() / ".screenvlm"
 DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
-DEFAULT_ADAPTER_DIR =  Path.home()
+DEFAULT_ADAPTER_DIR = Path(__file__).resolve().parent.parent
 
 def get_model_info():
     try:
