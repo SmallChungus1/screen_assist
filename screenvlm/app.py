@@ -1,5 +1,6 @@
 import sys
 import threading
+import time
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QTextEdit, QLineEdit, QPushButton, 
                                QCheckBox, QLabel, QScrollArea, QFrame)
@@ -98,11 +99,19 @@ class ScreenVLMApp(QMainWindow):
         
         # Capture screen
         try:
+            # Hide window to capture clean screenshot
+            self.hide()
+            QApplication.processEvents()
+            time.sleep(0.2)  # Give OS time to repaint
+            
             screenshot = capture_fullscreen()
         except Exception as e:
             self.output_area.append(f"System: Capture failed: {e}")
             self.status_label.setText("Error")
             return
+        finally:
+            self.show()
+            self.activateWindow()
             
         # RAG
         rag_context = None
