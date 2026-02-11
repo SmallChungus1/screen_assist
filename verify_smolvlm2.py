@@ -1,7 +1,7 @@
 import sys
 import torch
 import transformers
-from transformers import AutoProcessor, AutoModelForVision2Seq
+from transformers import AutoProcessor, AutoModelForVision2Seq, AutoModelForImageTextToText
 from PIL import Image
 
 print(f"Python version: {sys.version}")
@@ -20,7 +20,7 @@ try:
     try:
         from transformers import SmolVLMForConditionalGeneration
         print("SmolVLMForConditionalGeneration class found.")
-        model = SmolVLMForConditionalGeneration.from_pretrained(
+        model = AutoModelForImageTextToText.from_pretrained(
             model_id, 
             torch_dtype=torch.float32, 
             device_map="cpu"

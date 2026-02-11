@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoProcessor, AutoModelForVision2Seq
+from transformers import AutoProcessor, AutoModelForVision2Seq, AutoModelForImageTextToText
 from peft import PeftModel
 from ..config import settings
 import os
@@ -34,7 +34,7 @@ def load_model_and_processor():
     torch_dtype = torch.float16 if device in ["cuda", "mps"] else torch.float32
     
     try:
-        model = AutoModelForVision2Seq.from_pretrained(
+        model = AutoModelForImageTextToText.from_pretrained(
             base_model_id,
             torch_dtype=torch_dtype,
             device_map=device if device == "cuda" else None # device_map="auto" or specific device for CUDA
@@ -83,7 +83,7 @@ def merge_adapter(out_dir: str, dtype: str = "fp16"):
         
         print("Loading base model...")
         try:
-            model = AutoModelForVision2Seq.from_pretrained(
+            model = AutoModelForImageTextToText.from_pretrained(
                 base_model_id,
                 torch_dtype=torch_dtype,
                 device_map="cpu" 

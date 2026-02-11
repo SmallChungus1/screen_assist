@@ -28,6 +28,7 @@ class VLMWorker:
         self._loaded = False
         self.retriever = None
         self.app = None
+        self._use_mlx = False
 
     def start(self):
         self._thread.start()
@@ -49,26 +50,58 @@ class VLMWorker:
             return None
 
     def _generate(self, prompt: str, image: Image.Image) -> str:
-        inputs = self._processor(text=prompt, images=[image], return_tensors="pt")
-        
-        # Moving k,v values to device
-        model_dtype = self._model.dtype
-        new_inputs = {}
-        for k, v in inputs.items():
-            v = v.to(self._device)
-            if torch.is_floating_point(v):
-                v = v.to(model_dtype)
-            new_inputs[k] = v
-        
-        generated_ids = self._model.generate(**new_inputs, max_new_tokens=500)
-        
-        #trim the inputs since model sometimes repeat the prompt
-        if "input_ids" in new_inputs:
-            input_len = new_inputs["input_ids"].shape[1]
-            generated_ids = generated_ids[:, input_len:]
+        if self._use_mlx:
+            from mlx_vlm import generate
+            # Save image to temp file for MLX to load, as PIL support can be inconsistent depending on version
+            import tempfile
+            import os
+            
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                image.save(tmp.name)
+                tmp_path = tmp.name
+                
+            try:
+                # mlx_vlm.generate takes the model, processor, and input (prompt + image)
+                # We trust standard usage here.
+                response = generate(
+                    self._model, 
+                    self._processor, 
+                    prompt=prompt, 
+                    image=[tmp_path], 
+                    max_tokens=500, 
+                    verbose=False
+                )
+                return response
+            except Exception as e:
+                print(f"Worker: MLX generation failed: {e}")
+                import traceback
+                traceback.print_exc()
+                # Fallback? No, if we loaded backend we must use it.
+                return f"Error generating with MLX: {e}"
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+        else:
+            inputs = self._processor(text=prompt, images=[image], return_tensors="pt")
+            
+            # Moving k,v values to device
+            model_dtype = self._model.dtype
+            new_inputs = {}
+            for k, v in inputs.items():
+                v = v.to(self._device)
+                if torch.is_floating_point(v):
+                    v = v.to(model_dtype)
+                new_inputs[k] = v
+            
+            generated_ids = self._model.generate(**new_inputs, max_new_tokens=500)
+            
+            #trim the inputs since model sometimes repeat the prompt
+            if "input_ids" in new_inputs:
+                input_len = new_inputs["input_ids"].shape[1]
+                generated_ids = generated_ids[:, input_len:]
 
-        generated_texts = self._processor.batch_decode(generated_ids, skip_special_tokens=True)
-        return generated_texts[0]
+            generated_texts = self._processor.batch_decode(generated_ids, skip_special_tokens=True)
+            return generated_texts[0]
 
     ###Node definitions for agent_graph.py###
 
@@ -188,9 +221,37 @@ Example: {{"grade": "pass"}} or {{"grade": "lacking"}}
 
     def _run_loop(self):
         print("Worker: Initializing model...")
+        self._use_mlx = False
+        
+        # Check for MLX availability
+        # Note: We do this inside the loop to catch import errors safely
         try:
-            self._model, self._processor, self._device = load_model_and_processor()
+            from .mlx_loader import load_mlx_model, is_mlx_available
+            from ..config import settings
             
+            if is_mlx_available():
+                print("Worker: Apple Silicon detected. Attempting to load MLX model...")
+                try:
+                    self._model, self._processor = load_mlx_model(settings["base_model_id"])
+                    self._use_mlx = True
+                    self._device = "mlx"
+                    print(f"Worker: Loaded MLX model for {settings['base_model_id']}")
+                except Exception as e:
+                    print(f"Worker: MLX load failed ({e}). Falling back to Transformers.")
+            
+        except ImportError:
+            print("Worker: mlx-vlm not installed or import failed. Skipping.")
+
+        if not self._use_mlx:
+            try:
+                self._model, self._processor, self._device = load_model_and_processor()
+            except Exception as e:
+                print(f"Worker: Failed to load: {e}")
+                import traceback
+                traceback.print_exc()
+                return
+        
+        try:
             self.retriever = Retriever()
             self.app = build_graph(self)
             self._loaded = True
