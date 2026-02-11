@@ -190,6 +190,7 @@ Example: {{"grade": "pass"}} or {{"grade": "lacking"}}
         print("Worker: Initializing model...")
         try:
             self._model, self._processor, self._device = load_model_and_processor()
+            
             self.retriever = Retriever()
             self.app = build_graph(self)
             self._loaded = True

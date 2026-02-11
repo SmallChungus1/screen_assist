@@ -1,9 +1,19 @@
 import argparse
 import sys
+from pathlib import Path
 from .config import settings
 
 def run_command(args):
-    print("Starting UI...")
+    if args.model:
+        print(f"Overriding model with: {args.model}")
+        settings["base_model_id"] = args.model
+        # Update adapter dir reasoning to match config logic
+        # format: vlm_qlora_{safe_name}
+        safe_name = args.model.split("/")[-1]
+        default_adapter_root = Path(__file__).resolve().parent.parent
+        settings["adapter_dir"] = str(default_adapter_root / f"vlm_qlora_{safe_name}")
+
+    print(f"Starting UI with model: {settings['base_model_id']}")
     # TODO: Import and run app
     from .app import main as app_main
     app_main()
@@ -70,7 +80,8 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # run
-    subparsers.add_parser("run", help="Launch the UI app")
+    run_parser = subparsers.add_parser("run", help="Launch the UI app")
+    run_parser.add_argument("--model", type=str, help="HuggingFace model ID to use")
 
     # ingest
     ingest_parser = subparsers.add_parser("ingest", help="Ingest documents for RAG")

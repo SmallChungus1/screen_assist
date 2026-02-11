@@ -59,7 +59,7 @@ The application is run via the command-line interface (CLI). Ensure your virtual
 
 ### Launch the Application
 
-To start the UI and the VLM worker:
+To start the UI and the VLM worker (by default uses huggingface model specified in hf_vlm_model_name.txt):
 
 ```powershell
 python -m screenvlm.cli run

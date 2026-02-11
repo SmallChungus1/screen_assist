@@ -7,26 +7,12 @@ DEFAULT_CONFIG_DIR = Path.home() / ".screenvlm"
 DEFAULT_CONFIG_PATH = DEFAULT_CONFIG_DIR / "config.yaml"
 DEFAULT_ADAPTER_DIR = Path(__file__).resolve().parent.parent
 
-def get_model_info():
-    try:
-        model_name_path = Path("vlm_model_name.txt")
-        if model_name_path.exists():
-            with open(model_name_path, "r") as f:
-                model_id = f.read().strip()
-                # sanitize model name for directory usage
-                safe_name = model_id.split("/")[-1]
-                return model_id, f"vlm_qlora_{safe_name}"
-    except Exception as e:
-        print(f"Warning: Failed to read vlm_model_name.txt: {e}")
-    
-    # Fallback
-    return "HuggingFaceTB/SmolVLM-Instruct", "vlm_qlora"
-
-base_model, adapter_dir = get_model_info()
+# Default Model
+DEFAULT_MODEL_ID = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
 
 DEFAULTS = {
-    "base_model_id": base_model,
-    "adapter_dir": str(DEFAULT_ADAPTER_DIR / adapter_dir),
+    "base_model_id": DEFAULT_MODEL_ID,
+    "adapter_dir": str(DEFAULT_ADAPTER_DIR / f"vlm_qlora_{DEFAULT_MODEL_ID.split('/')[-1]}"),
     "device_pref": "auto",
     "chroma_dir": str(DEFAULT_CONFIG_DIR / "chroma"),
     "docs_dir": str(Path.home() / "screenvlm_docs"),
@@ -59,18 +45,6 @@ def load_config() -> Dict[str, Any]:
                 yaml.dump(DEFAULTS, f)
         except Exception as e:
             print(f"Warning: Failed to create default config file: {e}")
-
-    # Enforce vlm_model_name.txt authority if it exists
-    # This prevents stale config.yaml from overriding the active model
-    try:
-        if Path("vlm_model_name.txt").exists():
-             live_base, live_adapter = get_model_info()
-             # Logic from DEFAULTS construction regarding DEFAULT_ADAPTER_DIR
-             # We need to reconstruct the full path for adapter_dir
-             config["base_model_id"] = live_base
-             config["adapter_dir"] = str(DEFAULT_ADAPTER_DIR / live_adapter)
-    except Exception as e:
-        print(f"Warning: Failed to apply vlm_model_name.txt override: {e}")
 
     # Override with env vars
     env_map = {
