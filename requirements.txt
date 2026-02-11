@@ -14,5 +14,4 @@ sentence-transformers
 PySide6
 langgraph
 ddgs
-mlx
-mlx-vlm
+

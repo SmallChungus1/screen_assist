@@ -44,18 +44,8 @@ def doctor_command(args):
     except ImportError as e:
         checks.append(("Model dependencies", f"FAIL ({e})"))
 
-    # Check 2: MLX Support (Mac only)
-    import sys
-    import platform
-    if sys.platform == "darwin" and platform.machine() == "arm64":
-        try:
-            import mlx.core
-            import mlx_vlm
-            checks.append(("MLX Acceleration", "PASS"))
-        except ImportError:
-            checks.append(("MLX Acceleration", "FAIL (Optional - Install mlx-vlm)"))
-    else:
-        checks.append(("MLX Acceleration", "N/A (Not Apple Silicon)"))
+    # Check 2: Adapter dir
+
 
     # Check 3: Adapter dir
     import os
