@@ -12,3 +12,5 @@ langchain-community
 chromadb
 sentence-transformers
 PySide6
+langgraph
+ddgs

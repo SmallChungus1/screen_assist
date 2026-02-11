@@ -9,7 +9,6 @@ from PySide6.QtGui import QFont, QKeySequence, QShortcut
 
 from .config import settings
 from .capture import capture_fullscreen
-from .rag.retriever import Retriever
 from .vlm.worker import VLMWorker
 
 class WorkerSignals(QObject):
@@ -23,7 +22,6 @@ class ScreenVLMApp(QMainWindow):
         self.resize(400, 600)
         
         # Initialize components
-        self.retriever = None
         self.worker = VLMWorker()
         self.worker.start()
         
@@ -77,16 +75,8 @@ class ScreenVLMApp(QMainWindow):
         self.shortcut_hide = QShortcut(QKeySequence("Ctrl+Shift+H"), self)
         self.shortcut_hide.activated.connect(self.toggle_visibility)
         
-        # Init Retriever lazy
-        self.init_retriever()
+        self.shortcut_hide.activated.connect(self.toggle_visibility)
 
-    def init_retriever(self):
-        # We initialized retriever in background to not block UI startup?
-        # For simplicity, do it here but maybe catch errors
-        try:
-            self.retriever = Retriever()
-        except Exception as e:
-            self.output_area.append(f"System: RAG Init Failed: {e}\n")
 
     def handle_ask(self):
         question = self.input_box.text().strip()
@@ -112,19 +102,11 @@ class ScreenVLMApp(QMainWindow):
         finally:
             self.show()
             self.activateWindow()
-            
-        # RAG
-        rag_context = None
-        if self.rag_checkbox.isChecked() and self.retriever:
-            try:
-                self.status_label.setText("Retrieving...")
-                rag_context = self.retriever.retrieve(question)
-            except Exception as e:
-                 self.output_area.append(f"System: Retrieval failed: {e}")
-        
+
         # Submit to worker
-        self.status_label.setText("Inference...")
-        self.worker.submit_task(screenshot, question, rag_context)
+        self.status_label.setText("Thinking...")
+        rag_enabled = self.rag_checkbox.isChecked()
+        self.worker.submit_task(screenshot, question, rag_enabled=rag_enabled)
 
     def handle_ingest(self):
         self.output_area.append("System: Ingestion triggers via CLI for now. Run `screenvlm ingest`.")

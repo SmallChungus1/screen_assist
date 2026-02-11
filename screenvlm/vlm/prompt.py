@@ -34,13 +34,17 @@ def format_chat_messages(question: str, rag_context=None):
     )
 
     # Put RAG context into a separate block (still in system is fine, but keep it structured)
+    # Put RAG context into a separate block (still in system is fine, but keep it structured)
     if rag_context:
-        ctx_lines = []
-        for ch in rag_context:
-            ctx_lines.append(
-                f"[doc:{ch.get('chunk_id')}] (Source: {ch.get('source')}): {ch.get('text')}"
-            )
-        system_text += "\nRetrieved context:\n" + "\n".join(ctx_lines)
+        if isinstance(rag_context, str):
+            system_text += "\nRetrieved context:\n" + rag_context
+        elif isinstance(rag_context, list):
+            ctx_lines = []
+            for ch in rag_context:
+                ctx_lines.append(
+                    f"[doc:{ch.get('chunk_id')}] (Source: {ch.get('source')}): {ch.get('text')}"
+                )
+            system_text += "\nRetrieved context:\n" + "\n".join(ctx_lines)
 
     return [
         {"role": "system", "content": [{"type": "text", "text": system_text}]},
